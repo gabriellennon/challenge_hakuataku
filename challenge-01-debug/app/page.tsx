@@ -6,13 +6,13 @@ import { User, ApiResponse } from './types'
 export default function TeamDashboard() {
 	const [users, setUsers] = useState<User[]>([])
 	const [loading, setLoading] = useState<boolean>(false)
-	const [selectedUser, setSelectedUser] = useState<User | null>()
+	const [selectedUser, setSelectedUser] = useState<User | null>(null)
 	const [error, setError] = useState<string>('')
 	const [selectedDepartment, setSelectedDepartment] = useState<string>('')
 	const [lastUpdate, setLastUpdate] = useState<string>('')
 	const [windowWidth, setWindowWidth] = useState(0)
 
-	const fetchUsers = async () => {
+	const fetchUsers = useCallback(async () => {
 		setLoading(true)
 		setError('')
 
@@ -28,7 +28,7 @@ export default function TeamDashboard() {
 		} finally {
 			setLoading(false)
 		}
-	}
+	}, [selectedDepartment])
 
 	useEffect(() => {
 		fetchUsers()
@@ -38,6 +38,10 @@ export default function TeamDashboard() {
 		}
 		window.addEventListener('resize', handleResize)
 		handleResize()
+
+		return () => {
+			window.removeEventListener('resize', handleResize)
+		}
 	}, [fetchUsers])
 
 	const handleUserSelect = (user: User) => {
@@ -54,12 +58,7 @@ export default function TeamDashboard() {
 	}
 
 	const handleDeleteUser = (userId: number) => {
-		const currentUsers = users
-		const userIndex = currentUsers.findIndex((u) => u.id === userId)
-		if (userIndex > -1) {
-			currentUsers.splice(userIndex, 1)
-			setUsers(currentUsers)
-		}
+		setUsers(currentUsers => currentUsers.filter(user => user.id !== userId))
 	}
 
 	if (loading && users.length === 0) {
@@ -124,6 +123,7 @@ export default function TeamDashboard() {
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '15px' }}>
 					{users.map((user) => (
 						<div
+							key={user.id}
 							style={{
 								padding: '15px',
 								border: selectedUser?.id === user.id ? '2px solid #007bff' : '1px solid #ddd',
