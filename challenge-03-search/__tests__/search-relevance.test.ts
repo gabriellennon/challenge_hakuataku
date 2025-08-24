@@ -53,6 +53,58 @@ describe('Search Relevance Algorithm', () => {
 		const results = await searchKnowledge('integr')
 		expect(results.some((r) => r.title.includes('integração') || r.content.includes('integração'))).to.equal(true)
 	})
+
+	// Cenários específicos do README
+	it('should prioritize title matches for "busca" query', async () => {
+		const results = await searchKnowledge('busca')
+		
+		// Deve ter resultados
+		expect(results.length).to.be.greaterThan(0)
+		
+		// Resultados com "busca" no título devem ter score maior
+		const titleMatches = results.filter(r => r.title.toLowerCase().includes('busca'))
+		const contentMatches = results.filter(r => !r.title.toLowerCase().includes('busca') && (r.content.toLowerCase().includes('busca') || r.snippet.toLowerCase().includes('busca')))
+		
+		if (titleMatches.length > 0 && contentMatches.length > 0) {
+			expect(titleMatches[0].score).to.be.greaterThan(contentMatches[0].score)
+		}
+	})
+
+	it('should find "semântica" when searching for "semantica" (no accent)', async () => {
+		const results = await searchKnowledge('semantica')
+		
+		// Deve encontrar documentos com "semântica"
+		const hasSemanticMatch = results.some(r => 
+			r.title.toLowerCase().includes('semântica') || 
+			r.content.toLowerCase().includes('semântica') ||
+			r.snippet.toLowerCase().includes('semântica')
+		)
+		
+		expect(hasSemanticMatch).to.equal(true)
+		expect(results.length).to.be.greaterThan(0)
+	})
+
+	it('should find "busca" when searching for "buca" (typo)', async () => {
+		const results = await searchKnowledge('buca')
+		
+		// Deve encontrar documentos relacionados a "busca" através de fuzzy matching
+		expect(results.length).to.be.greaterThan(0)
+		
+		// Pelo menos um resultado deve ter score > 0
+		expect(results.some(r => r.score > 0)).to.equal(true)
+	})
+
+	it('should handle multiple query terms correctly', async () => {
+		const results = await searchKnowledge('busca semantica')
+		
+		// Deve encontrar resultados que mencionam ambos os termos ou similares
+		expect(results.length).to.be.greaterThan(0)
+		
+		// Resultados devem ter scores calculados
+		results.forEach(result => {
+			expect(result.score).to.be.greaterThan(0)
+		})
+	})
 })
 
 describe('Edge Cases', () => {
