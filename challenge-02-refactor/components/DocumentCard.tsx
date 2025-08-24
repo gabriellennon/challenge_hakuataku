@@ -1,4 +1,4 @@
-import { Document } from '../hooks/useKnowledgeBase'
+import { Document } from '@/types'
 import { styles } from '../styles/knowledgeBase.styles'
 
 interface DocumentCardProps {
